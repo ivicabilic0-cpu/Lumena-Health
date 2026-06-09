@@ -1762,7 +1762,7 @@
     const ex=document.getElementById('addonExpress'); if(ex) ex.checked=state.addOns.express;
     const doc=document.getElementById('addonDoctor'); if(doc) doc.value=state.addOns.doctor;
 
-    seedCustomerReports(); renderAllStep12(); updateStep3(); renderCustomer();
+    seedCustomerReports(); updateStep12(); renderCustomer(); if(typeof d2Render==='function') d2Render();
     toast('Demo geladen','Präanalytik-Hinweise, Checkout & Dashboard aktiv.');
   }
 
@@ -1780,7 +1780,7 @@
     const ex=document.getElementById('addonExpress'); if(ex) ex.checked=false;
     const doc=document.getElementById('addonDoctor'); if(doc) doc.value='none';
 
-    renderAllStep12(); updateStep3(); renderCustomer();
+    renderAllStep12(); updateStep3(); renderCustomer(); if(typeof d2Render==='function') d2Render();
     toast('Zurückgesetzt','Alle Demo-Einstellungen zurückgesetzt.');
   }
 
