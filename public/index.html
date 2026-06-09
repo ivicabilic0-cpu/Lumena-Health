@@ -1911,6 +1911,537 @@
     }, true);
   });
 </script>
+<script>
+  
+  // ============================================================
+// DASHBOARD 2.0 – JavaScript
+// ============================================================
 
+// ── Health Score berechnen ──
+function calcHealthScore() {
+  const all = Object.values(labs).flat();
+  const flags = all.map(t => flagFor(t.value, t.low, t.high));
+  const total = flags.length;
+  const ok    = flags.filter(f => f === 'ok').length;
+  const warn  = flags.filter(f => f === 'warn').length;
+  const danger= flags.filter(f => f === 'danger').length;
+  const raw   = Math.round((ok * 1 + warn * 0.5) / total * 100);
+  return { score: Math.max(0, Math.min(100, raw)), ok, warn, danger, total };
+}
+
+function scoreColor(s) {
+  if (s >= 80) return '#34d399';
+  if (s >= 60) return '#fbbf24';
+  return '#fb7185';
+}
+function scoreLabel(s) {
+  if (s >= 80) return 'Sehr gut';
+  if (s >= 65) return 'Gut';
+  if (s >= 50) return 'Verbesserungspotenzial';
+  return 'Abklärung empfohlen';
+}
+
+// ── Hero rendern ──
+function d2RenderHero() {
+  const { score, ok, warn, danger } = calcHealthScore();
+  const ring  = document.getElementById('d2ScoreRing');
+  const num   = document.getElementById('d2ScoreNum');
+  const title = document.getElementById('d2HeroTitle');
+  const sub   = document.getElementById('d2HeroSub');
+  const chips = document.getElementById('d2HeroChips');
+
+  if (ring) {
+    const col = scoreColor(score);
+    ring.style.background = `conic-gradient(${col} 0% ${score}%, rgba(148,163,184,.12) ${score}% 100%)`;
+    ring.style.boxShadow  = `0 0 0 4px ${col}22, 0 0 30px ${col}28`;
+  }
+  if (num)   { num.textContent = score; num.style.color = scoreColor(score); }
+  if (title)   title.textContent = `Health Score: ${scoreLabel(score)}`;
+
+  const reports   = state.customer?.reports || [];
+  const last      = reports[0]?.date || '—';
+  const { level } = overallStatusFromLabs();
+  const nextCheck = level === 'danger' ? 'Zeitnahe Abklärung'
+                  : level === 'warn'   ? 'In 8–12 Wochen'
+                  : 'In 6–12 Monaten';
+  if (sub) sub.textContent = `Letzte Auswertung: ${last} · Nächster Check: ${nextCheck}`;
+
+  if (chips) {
+    const chipData = [
+      { label: `${ok} Werte OK`,    cls: 'ok'     },
+      warn   > 0 ? { label: `${warn} Auffällig`,  cls: 'warn'   } : null,
+      danger > 0 ? { label: `${danger} Kritisch`, cls: 'danger' } : null,
+    ].filter(Boolean);
+    chips.innerHTML = chipData.map(c =>
+      `<span class="badge ${c.cls}">${c.label}</span>`
+    ).join('');
+  }
+}
+
+// ── KPI Cards ──
+function d2RenderKPIs() {
+  const { score, warn, danger } = calcHealthScore();
+  const { level, label }        = overallStatusFromLabs();
+  const reports   = state.customer?.reports || [];
+  const last      = reports[0]?.date || '—';
+  const nextCheck = level === 'danger' ? 'Zeitnah'
+                  : level === 'warn'   ? '8–12 Wo.'
+                  : '6–12 Mon.';
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('d2KpiDate',      last);
+  set('d2KpiStatus',    label);
+  set('d2KpiStatusSub', `Score: ${score}/100`);
+  set('d2KpiAlerts',    `${warn + danger}`);
+  set('d2KpiAlertsSub', `davon ${danger} kritisch`);
+  set('d2KpiNext',      nextCheck);
+
+  const statusEl = document.getElementById('d2KpiStatus');
+  if (statusEl) statusEl.style.color = scoreColor(score);
+}
+
+// ── Alert Banner ──
+function d2RenderAlert() {
+  const banner = document.getElementById('d2AlertBanner');
+  if (!banner) return;
+  const { hard } = preIssues ? preIssues() : { hard: false };
+  const { level } = overallStatusFromLabs();
+
+  if (level === 'danger') {
+    banner.style.display = 'flex';
+    banner.className = 'd2-alert-banner danger';
+    document.getElementById('d2AlertIcon').textContent  = '🚨';
+    document.getElementById('d2AlertTitle').textContent = 'Kritische Werte – Abklärung empfohlen';
+    document.getElementById('d2AlertDesc').textContent  = 'Einige Werte liegen ausserhalb des Normbereichs. Bei Beschwerden bitte ärztlich abklären.';
+  } else if (level === 'warn' || hard) {
+    banner.style.display = 'flex';
+    banner.className = 'd2-alert-banner warn';
+    document.getElementById('d2AlertIcon').textContent  = '⚠️';
+    document.getElementById('d2AlertTitle').textContent = hard ? 'Präanalytik: Wiederholung empfohlen' : 'Grenzwertige Befunde';
+    document.getElementById('d2AlertDesc').textContent  = hard
+      ? 'Mehrere Faktoren beeinflussen die Vergleichbarkeit. Standardisierte Wiederholung einplanen.'
+      : 'Einzelne Werte sind grenzwertig. Verlauf und Kontext beachten.';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ── Range Bar rendern ──
+function d2RenderRangeBar(test) {
+  const fl  = flagFor(test.value, test.low, test.high);
+  const pre = preAffectsTag ? preAffectsTag(test) : null;
+
+  let pct = 50;
+  const lo = test.low, hi = test.high;
+  if      (lo === 0 && hi >= 999) { pct = 50; }
+  else if (lo === 0)              { pct = Math.min(95, (test.value / (hi * 1.5)) * 100); }
+  else if (hi >= 999)             { pct = Math.max(5, Math.min(90, ((test.value - lo) / (lo * 0.8)) * 50 + 30)); }
+  else {
+    const range = hi - lo;
+    pct = Math.max(3, Math.min(97, ((test.value - lo) / range) * 100));
+  }
+
+  let okLeft = 20, okWidth = 60;
+  if      (lo === 0)  { okLeft = 0;  okWidth = Math.min(70, (hi / (hi * 1.5)) * 100); }
+  else if (hi >= 999) { okLeft = 25; okWidth = 50; }
+
+  const colMap = { ok: 'var(--ok)', warn: 'var(--warn)', danger: 'var(--danger)' };
+  const col = colMap[fl] || 'var(--ok)';
+  const statusLabel = fl === 'ok' ? 'OK' : fl === 'warn' ? 'Auffällig' : 'Kritisch';
+
+  return `
+    <div class="d2-marker">
+      <div class="d2-marker-top">
+        <div>
+          <div class="d2-marker-name">${test.key}
+            <span style="font-size:10px;color:var(--muted);font-weight:400">${test.unit}</span>
+          </div>
+          ${pre ? `<div class="d2-marker-pre">⚠ Präanalytik: ${preChipText(pre)}</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div class="d2-marker-val" style="color:${col}">${test.value}</div>
+          <div class="d2-marker-ref">${test.ref}</div>
+          <div style="font-size:10px;font-weight:700;color:${col}">${statusLabel}</div>
+        </div>
+      </div>
+      <div class="d2-range-track">
+        <div class="d2-range-ok" style="left:${okLeft}%;width:${okWidth}%"></div>
+        <div class="d2-range-needle ${fl}" style="left:${pct}%"></div>
+      </div>
+      <div class="d2-range-labels">
+        <span>${lo === 0 ? '0' : lo}</span>
+        <span style="color:var(--ok);font-size:10px">Normbereich</span>
+        <span>${hi >= 999 ? '>' + lo : hi}</span>
+      </div>
+    </div>`;
+}
+
+// ── Module Cards ──
+function d2RenderModules() {
+  const wrap = document.getElementById('d2Modules');
+  if (!wrap) return;
+
+  const moduleDefs = [
+    { key:'metabolic',     icon:'❤️',  title:'Stoffwechsel',       sub:'Glukose, Insulin, HOMA-IR, HbA1c' },
+    { key:'lipids',        icon:'🫀',  title:'Lipide',              sub:'Cholesterin, LDL, HDL, Triglyceride, ApoB, Lp(a)' },
+    { key:'cbc',           icon:'🩸',  title:'Blutbild',            sub:'Hämoglobin, Leukozyten, Thrombozyten' },
+    { key:'kidney',        icon:'🧴',  title:'Niere',               sub:'Kreatinin, eGFR, Cystatin C, Harnsäure' },
+    { key:'electrolytes',  icon:'⚡',  title:'Elektrolyte',         sub:'Na, K, Ca, Mg, Phosphat' },
+    { key:'thyroid',       icon:'🦋',  title:'Schilddrüse',         sub:'TSH, fT3, fT4, TPO-AK' },
+    { key:'micronutrients',icon:'🥦',  title:'Mikronährstoffe',     sub:'Ferritin, Vit D, B12, Folat, Zink, Selen' },
+    { key:'hormones',      icon:'🧠',  title:'Hormone & Stress',    sub:'Cortisol, Testosteron, SHBG' },
+    { key:'liver',         icon:'🧪',  title:'Leber & Entzündung',  sub:'ALT, AST, GGT, Bilirubin, Albumin' },
+    { key:'muscle',        icon:'💪',  title:'Muskel / Belastung',  sub:'CK, Troponin' },
+    { key:'inflammation',  icon:'🔥',  title:'Entzündung',          sub:'hs-CRP, BSG, Fibrinogen' },
+    { key:'tumor',         icon:'🧬',  title:'Marker / CEA',        sub:'CEA' },
+  ];
+
+  wrap.innerHTML = moduleDefs.map(mod => {
+    const data     = labs[mod.key] || [];
+    const flags    = data.map(t => flagFor(t.value, t.low, t.high));
+    const crit     = flags.filter(f => f === 'danger').length;
+    const warn     = flags.filter(f => f === 'warn').length;
+    const badgeCls = crit > 0 ? 'danger' : warn > 0 ? 'warn' : 'ok';
+    const badgeTxt = crit > 0 ? `Kritisch: ${crit}` : warn > 0 ? `Auffällig: ${warn}` : 'Alle OK';
+    const bars     = data.map(t => d2RenderRangeBar(t)).join('');
+
+    return `
+      <div class="d2-mod-card">
+        <div class="d2-mod-header" onclick="d2ToggleMod(this)">
+          <div class="d2-mod-title">
+            <span style="font-size:20px">${mod.icon}</span>
+            <div>
+              <h3>${mod.title}</h3>
+              <p>${mod.sub}</p>
+            </div>
+          </div>
+          <div class="d2-mod-right">
+            <span class="badge ${badgeCls}">${badgeTxt}</span>
+            <span class="d2-chevron">▾</span>
+          </div>
+        </div>
+        <div class="d2-mod-body">${bars}</div>
+      </div>`;
+  }).join('');
+}
+
+function d2ToggleMod(header) {
+  const body    = header.nextElementSibling;
+  const chevron = header.querySelector('.d2-chevron');
+  const isOpen  = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+  if (chevron) chevron.classList.toggle('open', !isOpen);
+}
+
+// ── KI Zusammenfassung ──
+function d2RenderAI() {
+  const body  = document.getElementById('d2AiBody');
+  const badge = document.getElementById('d2AiBadge');
+  if (!body) return;
+
+  const { level } = overallStatusFromLabs();
+  if (badge) {
+    badge.textContent = level === 'danger' ? 'Kritisch' : level === 'warn' ? 'Hinweise' : 'Unauffällig';
+    badge.className   = `badge ${level}`;
+  }
+  body.innerHTML = `<div class="mini" style="color:var(--accent)">⏳ KI-Analyse wird geladen…</div>`;
+
+  const payload = {
+    reportId: state?.customer?.activeReportId || 'r1',
+    modules:  ['metabolic','lipids','thyroid','liver','inflammation','micronutrients'],
+    labs:     collectLabsForAI(),
+    pre:      collectPreForAI(),
+    order:    { city: state?.visit?.city || null, slot: state?.visit?.slot || null }
+  };
+
+  fetch('/api/ai/summarize', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    const raw = data?.summary || 'Keine KI-Antwort erhalten.';
+    body.innerHTML = d2FormatAI(raw);
+  })
+  .catch(() => {
+    body.innerHTML = `<div style="color:var(--danger);font-size:12px">Fehler beim Laden der KI-Zusammenfassung.</div>`;
+  });
+}
+
+// ── KI Text formatieren ──
+function d2FormatAI(raw) {
+  const lines = raw.split('\n');
+  let html = '', inList = false;
+
+  for (let line of lines) {
+    line = line.trim();
+    if (!line) { if (inList) { html += '</div>'; inList = false; } continue; }
+
+    if (/^#{1,3}\s/.test(line) || /^\*\*[^*]+\*\*$/.test(line)) {
+      if (inList) { html += '</div>'; inList = false; }
+      const txt = line.replace(/^#{1,3}\s/, '').replace(/\*\*/g, '');
+      html += `<div class="d2-ai-section-title">${txt}</div>`;
+      continue;
+    }
+    if (/^[-•*]\s/.test(line)) {
+      if (!inList) { html += '<div class="d2-ai-section">'; inList = true; }
+      const txt    = line.replace(/^[-•*]\s/, '').replace(/\*\*/g, '');
+      const dotCls = /kritisch|erhöht|auffällig/i.test(txt) ? 'warn' : 'ok';
+      html += `<div class="d2-ai-bullet"><div class="d2-ai-bullet-dot ${dotCls}"></div><div>${txt}</div></div>`;
+      continue;
+    }
+    if (/^\d+\.\s/.test(line)) {
+      if (inList) { html += '</div>'; inList = false; }
+      const num = line.match(/^(\d+)\./)[1];
+      const txt = line.replace(/^\d+\.\s/, '').replace(/\*\*/g, '');
+      html += `
+        <div class="d2-step-item">
+          <div class="d2-step-num">${num}</div>
+          <div class="d2-step-text">
+            <strong>${txt.split(':')[0] || txt}</strong>
+            ${txt.includes(':') ? txt.slice(txt.indexOf(':') + 1) : ''}
+          </div>
+        </div>`;
+      continue;
+    }
+    if (inList) { html += '</div>'; inList = false; }
+    const txt = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html += `<div class="d2-ai-section"><p>${txt}</p></div>`;
+  }
+  if (inList) html += '</div>';
+  return html || `<div class="mini">Keine Zusammenfassung verfügbar.</div>`;
+}
+
+// ── Sparklines ──
+function d2RenderTrends() {
+  const grid = document.getElementById('d2TrendGrid');
+  if (!grid) return;
+  const hist = state.customer?.history || [];
+  const keys = [
+    { key:'HbA1c',              low:4.0,  high:5.6,  unit:'%'      },
+    { key:'LDL',                low:0,    high:3.0,  unit:'mmol/L' },
+    { key:'Triglyceride',       low:0,    high:1.7,  unit:'mmol/L' },
+    { key:'TSH',                low:0.4,  high:4.0,  unit:'mIU/L'  },
+    { key:'hs-CRP',             low:0,    high:3.0,  unit:'mg/L'   },
+    { key:'Vitamin D (25-OH)',  low:75,   high:999,  unit:'nmol/L' },
+  ];
+
+  grid.innerHTML = keys.map(k => {
+    const vals     = hist.map(h => h.values?.[k.key]).filter(v => v != null);
+    const last     = vals[vals.length - 1] ?? '—';
+    const prev     = vals[vals.length - 2];
+    const trend    = prev != null ? (last > prev ? '↑' : last < prev ? '↓' : '→') : '—';
+    const trendCol = trend === '↑' ? (k.high < 999 ? 'var(--warn)' : 'var(--ok)')
+                   : trend === '↓' ? (k.low  > 0   ? 'var(--ok)'  : 'var(--muted)')
+                   : 'var(--muted)';
+
+    const svgW = 120, svgH = 32;
+    let sparkSVG = '';
+    if (vals.length >= 2) {
+      const minV = Math.min(...vals) * 0.92;
+      const maxV = Math.max(...vals) * 1.08;
+      const pts  = vals.map((v, i) => {
+        const x = (i / (vals.length - 1)) * svgW;
+        const y = svgH - ((v - minV) / (maxV - minV || 1)) * (svgH - 6) - 3;
+        return `${x},${y}`;
+      }).join(' ');
+      const fl        = flagFor(last, k.low, k.high);
+      const strokeCol = fl === 'ok' ? '#34d399' : fl === 'warn' ? '#fbbf24' : '#fb7185';
+      sparkSVG = `<polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const lx = svgW;
+      const ly = svgH - ((vals[vals.length-1] - minV) / (maxV - minV || 1)) * (svgH - 6) - 3;
+      sparkSVG += `<circle cx="${lx}" cy="${ly}" r="3" fill="${strokeCol}"/>`;
+    }
+
+    return `
+      <div class="d2-spark-item">
+        <div class="d2-spark-top">
+          <div>
+            <div class="d2-spark-name">${k.key}</div>
+            <div class="d2-spark-trend" style="color:${trendCol}">${trend} ${vals.join(' → ')}</div>
+          </div>
+          <div class="d2-spark-val">${last} <span style="font-size:10px;color:var(--muted)">${k.unit}</span></div>
+        </div>
+        <svg class="d2-spark-svg" viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none">
+          ${sparkSVG}
+        </svg>
+      </div>`;
+  }).join('');
+}
+
+// ── Nächste Schritte ──
+function d2RenderNextSteps() {
+  const box = document.getElementById('d2NextSteps');
+  if (!box) return;
+  const { level } = overallStatusFromLabs();
+  const { hard }  = preIssues ? preIssues() : { hard: false };
+  const steps = [];
+
+  if (hard)           steps.push({ t:'Präanalytik standardisieren', d:'Nüchtern, kein Sport 24h, kein Biotin – dann Verlaufstest.' });
+  if (level==='danger') steps.push({ t:'Ärztliche Abklärung',        d:'Kritische Werte sollten zeitnah mit einem Arzt besprochen werden.' });
+  if (level!=='ok')   steps.push({ t:'Verlaufstest in 8–12 Wochen', d:'Gleiche Bedingungen, um Veränderungen zu messen.' });
+  else                steps.push({ t:'Jährlicher Check',             d:'Zur Verlaufskontrolle und Früherkennung.' });
+  steps.push({ t:'Module ergänzen', d:'Mikronährstoffe, Hormone oder Performance je nach Ziel.' });
+
+  box.innerHTML = steps.map((s, i) => `
+    <div class="d2-step-item">
+      <div class="d2-step-num">${i + 1}</div>
+      <div class="d2-step-text">
+        <strong>${s.t}</strong> ${s.d}
+      </div>
+    </div>`).join('');
+}
+
+// ── Journey ──
+function d2RenderJourney() {
+  const box  = document.getElementById('d2JourneySteps');
+  const meta = document.getElementById('d2JourneyMeta');
+  if (!box) return;
+
+  const steps = [
+    { k:'unbooked', icon:'🧾', label:'Nicht gebucht' },
+    { k:'booked',   icon:'📅', label:'Gebucht'       },
+    { k:'enroute',  icon:'🚗', label:'Unterwegs'     },
+    { k:'drawn',    icon:'🩸', label:'Abgenommen'    },
+    { k:'lab',      icon:'🧪', label:'Im Labor'      },
+    { k:'ready',    icon:'📈', label:'Bereit'        },
+  ];
+
+  const status    = state.visit?.status || 'unbooked';
+  const activeIdx = Math.max(0, steps.findIndex(s => s.k === status));
+
+  box.innerHTML = steps.map((s, i) => {
+    const isDone   = i < activeIdx;
+    const isActive = i === activeIdx;
+    const cls      = isDone ? 'done' : isActive ? 'active' : '';
+    return `
+      <div class="d2-jstep ${cls}">
+        <div class="d2-jstep-dot">${s.icon}</div>
+        <div class="d2-jstep-label">${s.label}</div>
+      </div>`;
+  }).join('');
+
+  const city = visitCities?.[state.visit?.city];
+  if (meta) {
+    meta.textContent = status === 'unbooked'
+      ? 'Buche einen Hausbesuch in Step 3.'
+      : `${city?.label || '—'} · ${state.visit?.slot || '—'} · Status: ${steps.find(s=>s.k===status)?.label || '—'}`;
+  }
+}
+
+// ── Journey Buttons ──
+function d2BindJourney() {
+  const bind = (id, status) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', () => { state.visit.status = status; d2RenderJourney(); });
+  };
+  bind('d2VisitEnroute', 'enroute');
+  bind('d2VisitDrawn',   'drawn');
+  bind('d2VisitLab',     'lab');
+  bind('d2VisitReady',   'ready');
+  bind('d2VisitReset',   'unbooked');
+}
+
+// ── Orders ──
+async function d2LoadOrders(email) {
+  const list   = document.getElementById('d2OrdersList');
+  const status = document.getElementById('d2OrdersStatus');
+  if (!list) return;
+
+  list.innerHTML = '<div class="mini">Laden…</div>';
+  if (status) status.textContent = 'Laden…';
+
+  try {
+    const res = await fetch('/api/orders/list?email=' + encodeURIComponent(email) + '&limit=10');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { orders } = await res.json();
+
+    if (!orders?.length) {
+      list.innerHTML = '<div class="mini">Keine Bestellungen gefunden.</div>';
+      if (status) status.textContent = '0 Bestellungen';
+      return;
+    }
+
+    list.innerHTML = orders.map(o => {
+      const dt     = new Date(o.created_at).toLocaleDateString('de-CH');
+      const amount = (o.amount_total / 100).toFixed(2);
+      const pdf    = o.receipt_url
+        ? `<a href="${o.receipt_url}" target="_blank" style="color:var(--accent);font-size:11px">PDF</a>` : '';
+      return `
+        <div class="d2-orders-row">
+          <div>
+            <div style="font-weight:700">${dt}</div>
+            <div class="meta">${o.city || '—'} · ${o.slot || '—'}</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="badge ${o.status==='paid'?'ok':'warn'}">${o.status||'—'}</span>
+            <span style="font-family:var(--mono);font-size:12px">CHF ${amount}</span>
+            ${pdf}
+          </div>
+        </div>`;
+    }).join('');
+    if (status) status.textContent = `${orders.length} Bestellung(en)`;
+  } catch (e) {
+    list.innerHTML = '<div style="color:var(--danger);font-size:12px">Fehler beim Laden.</div>';
+    if (status) status.textContent = 'Fehler';
+  }
+}
+
+function d2BindOrders() {
+  const btn   = document.getElementById('d2OrdersRefresh');
+  const input = document.getElementById('d2OrdersEmail');
+  if (!btn || !input) return;
+  const saved = localStorage.getItem('demoEmail') || '';
+  if (saved) input.value = saved;
+  btn.addEventListener('click', () => {
+    const email = (input.value || '').trim();
+    if (!email) { toast?.('E-Mail fehlt', 'Bitte E-Mail eingeben.'); return; }
+    localStorage.setItem('demoEmail', email);
+    d2LoadOrders(email);
+  });
+}
+
+// ── Action Buttons ──
+function d2BindActions() {
+  const dl  = document.getElementById('d2BtnDownload');
+  const rep = document.getElementById('d2BtnRepeat');
+  const shr = document.getElementById('d2BtnShare');
+  if (dl)  dl.addEventListener('click',  () => toast?.('Download', 'PDF-Report wird generiert (Demo).'));
+  if (rep) rep.addEventListener('click', () => {
+    const { hard } = preIssues ? preIssues() : { hard: false };
+    toast?.('Repeat planen', hard
+      ? 'Erst standardisieren (nüchtern, kein Sport, kein Biotin), dann planen.'
+      : 'Verlaufstest in 8–12 Wochen empfohlen.');
+  });
+  if (shr) shr.addEventListener('click', () => toast?.('Arztversion', 'Arzt-PDF wird erstellt (Demo).'));
+}
+
+// ── Haupt-Render ──
+function d2Render() {
+  d2RenderHero();
+  d2RenderKPIs();
+  d2RenderAlert();
+  d2RenderModules();
+  d2RenderAI();
+  d2RenderTrends();
+  d2RenderNextSteps();
+  d2RenderJourney();
+}
+
+// ── Init ──
+window.addEventListener('DOMContentLoaded', () => {
+  d2BindJourney();
+  d2BindOrders();
+  d2BindActions();
+});
+
+// Exportieren damit setView() es aufrufen kann
+window.d2Render     = d2Render;
+window.d2LoadOrders = d2LoadOrders;
+
+  </script>
+  
 </body>
 </html>
