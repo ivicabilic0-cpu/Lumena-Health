@@ -731,6 +731,44 @@
 
 <body>
 <div class="app">
+ <!-- ✅ Dashboard 2.0 Login Overlay -->
+<div id="d2LoginOverlay">
+  <div class="d2-login-card">
+    <div class="d2-login-logo">
+      <div class="d2-login-logo-icon">🧬</div>
+      <div class="d2-login-logo-text">
+        <h2>Lumena Health</h2>
+        <p>Kunden-Dashboard 2.0</p>
+      </div>
+    </div>
+    <h3 class="d2-login-title">Willkommen 👋</h3>
+    <p class="d2-login-sub">Bitte melde dich mit deiner E-Mail und deinem Passwort an.</p>
+    <div class="d2-login-error" id="d2LoginError"></div>
+    <div class="d2-login-field">
+      <label for="d2LoginEmail">E-Mail-Adresse</label>
+      <div class="d2-login-input-wrap">
+        <input type="email" id="d2LoginEmail" placeholder="deine@email.ch" autocomplete="email" />
+      </div>
+    </div>
+    <div class="d2-login-field">
+      <label for="d2LoginPass">Passwort</label>
+      <div class="d2-login-input-wrap">
+        <input type="password" id="d2LoginPass" placeholder="••••••••" autocomplete="current-password" />
+        <button type="button" id="d2TogglePass" title="Passwort anzeigen">👁</button>
+      </div>
+    </div>
+    <button id="d2LoginBtn" type="button">
+      <span id="d2LoginSpinner" class="d2-login-spinner"></span>
+      Anmelden
+    </button>
+    <p class="d2-login-footer">
+      Lumena Health &mdash; Alle Daten sind verschlüsselt.<br>
+      Diese Plattform liefert Assistenz, keine medizinische Beratung.
+    </p>
+  </div>
+</div>
+<!-- ENDE LOGIN OVERLAY -->
+ 
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">
