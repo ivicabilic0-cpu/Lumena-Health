@@ -1679,11 +1679,12 @@
       if (name === 'step4')  pill.textContent = 'Kunden-Dashboard aktiv';
     }
 
-    if (name === 'step4') {
-      const emailInput = document.getElementById('ordersEmail');
-      const email = (emailInput?.value || localStorage.getItem('demoEmail') || '').trim();
-      if (email && typeof loadOrders === 'function') loadOrders(email);
-    }
+   if (name === 'step4') {
+  seedCustomerReports();
+  if (typeof d2Render === 'function') d2Render();
+  const email = localStorage.getItem('demoEmail') || '';
+  if (email) d2LoadOrders(email);
+}
   }
 
   document.addEventListener('DOMContentLoaded', ()=>{
