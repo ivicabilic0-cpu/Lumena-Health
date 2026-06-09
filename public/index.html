@@ -176,7 +176,7 @@
 
     .toast{position:fixed; right:16px; bottom:16px; background:rgba(15,26,47,.85); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:12px; width:min(420px, calc(100vw - 32px)); display:none; z-index:100}
     .toast.show{display:block}
-    /* ── Dashboard 2.0 Styles ── */
+   /* ── Dashboard 2.0 Styles ── */
 .d2-wrap { display:flex; flex-direction:column; gap:20px; }
 
 /* Health Score Hero */
@@ -428,6 +428,301 @@
 .d2-alert-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
 .d2-alert-title { font-size:13px; font-weight:700; margin:0 0 4px; }
 .d2-alert-desc { font-size:12px; color:var(--muted); margin:0; line-height:1.5; }
+
+
+
+/* ============================================================
+   LOGIN OVERLAY
+   ============================================================ */
+#d2LoginOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(5, 12, 28, 0.92);
+  backdrop-filter: blur(18px);
+  align-items: center;
+  justify-content: center;
+  animation: d2FadeIn .25s ease;
+}
+
+.d2-login-card {
+  background: rgba(15, 26, 47, 0.95);
+  border: 1px solid rgba(96,165,250,.3);
+  border-radius: 28px;
+  padding: 40px 36px 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(96,165,250,.08);
+  animation: d2SlideUp .3s ease;
+}
+
+@keyframes d2FadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes d2SlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.d2-login-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.d2-login-logo-icon {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(96,165,250,.8), rgba(52,211,153,.6));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.d2-login-logo-text h2 {
+  margin: 0; font-size: 18px; font-weight: 800;
+}
+.d2-login-logo-text p {
+  margin: 2px 0 0; font-size: 12px; color: var(--muted);
+}
+
+.d2-login-title {
+  font-size: 22px; font-weight: 800; margin: 0 0 6px;
+}
+.d2-login-sub {
+  font-size: 13px; color: var(--muted); margin: 0 0 24px;
+}
+
+.d2-login-field {
+  margin-bottom: 14px;
+}
+.d2-login-field label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--muted); margin-bottom: 6px; letter-spacing: .04em;
+}
+.d2-login-input-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.d2-login-field input {
+  width: 100%; padding: 12px 42px 12px 14px;
+  background: rgba(16,31,59,.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  box-sizing: border-box;
+}
+.d2-login-field input:focus {
+  border-color: rgba(96,165,250,.5);
+  box-shadow: 0 0 0 3px rgba(96,165,250,.12);
+}
+.d2-login-field input::placeholder { color: var(--muted); }
+
+#d2TogglePass {
+  position: absolute; right: 12px; cursor: pointer;
+  background: none; border: none; font-size: 16px;
+  color: var(--muted); padding: 0; line-height: 1;
+}
+
+.d2-login-error {
+  display: none;
+  background: rgba(251,113,133,.12);
+  border: 1px solid rgba(251,113,133,.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--danger);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+#d2LoginBtn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, rgba(96,165,250,.9), rgba(52,211,153,.7));
+  border: none; border-radius: 14px;
+  color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity .15s ease, transform .1s ease;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 6px;
+}
+#d2LoginBtn:hover   { opacity: .9; }
+#d2LoginBtn:active  { transform: scale(.98); }
+#d2LoginBtn:disabled { opacity: .5; cursor: not-allowed; }
+
+.d2-login-spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: d2Spin .6s linear infinite;
+}
+
+.d2-login-footer {
+  margin-top: 20px; text-align: center;
+  font-size: 11px; color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Logout Button in Header */
+#d2LogoutBtn {
+  background: rgba(251,113,133,.12);
+  border: 1px solid rgba(251,113,133,.25);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px; color: var(--danger);
+  cursor: pointer; transition: .15s ease;
+}
+#d2LogoutBtn:hover { background: rgba(251,113,133,.2); }
+
+.d2-auth-bar {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; margin-bottom: 8px; font-size: 12px; color: var(--muted);
+}
+#d2AuthEmail { font-weight: 600; color: var(--accent); }
+
+/* ============================================================
+   KI ZUSAMMENFASSUNG - VERBESSERT
+   ============================================================ */
+.d2-ai-loading {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 0; font-size: 13px; color: var(--muted);
+}
+.d2-ai-spinner {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border: 2px solid rgba(96,165,250,.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: d2Spin .7s linear infinite;
+}
+@keyframes d2Spin {
+  to { transform: rotate(360deg); }
+}
+
+.d2-ai-fallback-notice {
+  background: rgba(251,191,36,.08);
+  border: 1px solid rgba(251,191,36,.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px; color: var(--warn);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* KI Log Panel */
+.d2-ai-log-btn {
+  font-size: 11px; color: var(--muted);
+  background: none; border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 10px;
+  cursor: pointer; transition: .15s ease;
+}
+.d2-ai-log-btn:hover { border-color: rgba(96,165,250,.3); color: var(--accent); }
+
+#d2AiLog {
+  display: none;
+  background: rgba(5,12,28,.8);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 160px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  margin-top: 12px;
+}
+.d2-log-line { padding: 2px 0; border-bottom: 1px solid rgba(148,163,184,.06); }
+.d2-log-line:last-child { border-bottom: none; }
+.d2-log-info    { color: var(--muted); }
+.d2-log-success { color: var(--ok); }
+.d2-log-warn    { color: var(--warn); }
+.d2-log-error   { color: var(--danger); }
+
+/* Leere Module */
+.d2-empty-mod {
+  padding: 16px 0;
+  font-size: 12px; color: var(--muted);
+  text-align: center; font-style: italic;
+}
+
+/* ============================================================
+   STYLING VERFEINERUNGEN
+   ============================================================ */
+
+/* Glassmorphism verstaerkt */
+.d2-hero,
+.d2-kpi-card,
+.d2-mod-card,
+.d2-ai-card,
+.d2-trend-card,
+.d2-journey-card,
+.d2-orders-card,
+.d2-spark-item {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Verbesserte Hover-Transitions */
+.d2-kpi-card {
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.d2-kpi-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(96,165,250,.35);
+  box-shadow: 0 8px 32px rgba(96,165,250,.08);
+}
+
+/* Moderner Scrollbar */
+.d2-ai-body::-webkit-scrollbar,
+#d2AiLog::-webkit-scrollbar { width: 4px; }
+.d2-ai-body::-webkit-scrollbar-track,
+#d2AiLog::-webkit-scrollbar-track { background: transparent; }
+.d2-ai-body::-webkit-scrollbar-thumb,
+#d2AiLog::-webkit-scrollbar-thumb {
+  background: rgba(96,165,250,.2); border-radius: 99px;
+}
+
+/* Badges verfeinert */
+.badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: 99px; letter-spacing: .03em;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.badge.ok     { background: rgba(34,197,94,.14);  color: var(--ok);     border: 1px solid rgba(34,197,94,.25);  }
+.badge.warn   { background: rgba(251,191,36,.14); color: var(--warn);   border: 1px solid rgba(251,191,36,.25); }
+.badge.danger { background: rgba(251,113,133,.14); color: var(--danger); border: 1px solid rgba(251,113,133,.25);}
+
+/* Score Ring Pulse-Animation */
+.d2-score-ring {
+  animation: d2RingPulse 3s ease-in-out infinite;
+}
+@keyframes d2RingPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.03); }
+}
+
+/* Verbesserte Range Bar */
+.d2-range-needle {
+  transition: left .5s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* Journey Connector */
+.d2-jstep-dot {
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.d2-jstep.active .d2-jstep-dot:hover,
+.d2-jstep.done .d2-jstep-dot:hover {
+  transform: scale(1.15);
+}
+
+/* Step Items verbessert */
+.d2-step-item {
+  transition: border-color .15s ease, background .15s ease;
+}
+.d2-step-item:hover {
+  border-color: rgba(96,165,250,.25);
+  background: rgba(16,31,59,.75);
+}
 
     .toast .t{font-weight:700; font-size:12px; margin:0}
     .toast .d{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.45}
