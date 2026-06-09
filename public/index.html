@@ -898,7 +898,140 @@
         </div>
       </div>
     </div>
+<!-- VIEW: STEP 4 – Dashboard 2.0 -->
+<div class="view" id="view-step4">
+  <div class="d2-wrap">
 
+    <!-- Alert Banner -->
+    <div class="d2-alert-banner warn" id="d2AlertBanner" style="display:none">
+      <div class="d2-alert-icon" id="d2AlertIcon">⚠️</div>
+      <div>
+        <p class="d2-alert-title" id="d2AlertTitle">—</p>
+        <p class="d2-alert-desc" id="d2AlertDesc">—</p>
+      </div>
+    </div>
+
+    <!-- Hero: Health Score -->
+    <div class="d2-hero">
+      <div class="d2-score-ring" id="d2ScoreRing">
+        <div class="d2-score-inner">
+          <div class="d2-score-num" id="d2ScoreNum">—</div>
+          <div class="d2-score-lbl">Score</div>
+        </div>
+      </div>
+      <div class="d2-hero-info">
+        <h2 id="d2HeroTitle">Mein Gesundheitsprofil</h2>
+        <p id="d2HeroSub">Letzte Auswertung: — · Nächster empfohlener Check: —</p>
+        <div class="d2-hero-chips" id="d2HeroChips"></div>
+      </div>
+      <div class="d2-hero-actions">
+        <button class="btn primary" id="d2BtnRepeat">🔁 Repeat planen</button>
+        <button class="btn" id="d2BtnDownload">⬇️ PDF Report</button>
+        <button class="btn" id="d2BtnShare">↗️ Arztversion</button>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="d2-kpi-row">
+      <div class="d2-kpi-card">
+        <div class="d2-kpi-icon">📅</div>
+        <div class="d2-kpi-val" id="d2KpiDate">—</div>
+        <div class="d2-kpi-name">Letzte Auswertung</div>
+      </div>
+      <div class="d2-kpi-card">
+        <div class="d2-kpi-icon">🚦</div>
+        <div class="d2-kpi-val" id="d2KpiStatus">—</div>
+        <div class="d2-kpi-name">Gesamtstatus</div>
+        <div class="d2-kpi-sub" id="d2KpiStatusSub">—</div>
+      </div>
+      <div class="d2-kpi-card">
+        <div class="d2-kpi-icon">⚠️</div>
+        <div class="d2-kpi-val" id="d2KpiAlerts">—</div>
+        <div class="d2-kpi-name">Auffällige Werte</div>
+        <div class="d2-kpi-sub" id="d2KpiAlertsSub">—</div>
+      </div>
+      <div class="d2-kpi-card">
+        <div class="d2-kpi-icon">🎯</div>
+        <div class="d2-kpi-val" id="d2KpiNext">—</div>
+        <div class="d2-kpi-name">Nächster Check</div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="d2-main">
+
+      <!-- Links: Module mit Range Bars -->
+      <div class="d2-modules" id="d2Modules"></div>
+
+      <!-- Rechts: Sidebar -->
+      <div class="d2-sidebar">
+
+        <!-- Journey Card -->
+        <div class="d2-journey-card">
+          <h3>🏠 Hausbesuch Status</h3>
+          <div class="d2-journey-steps" id="d2JourneySteps"></div>
+          <div class="mini" id="d2JourneyMeta" style="margin-top:10px">—</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+            <button class="btn" id="d2VisitEnroute">🚗 Unterwegs</button>
+            <button class="btn" id="d2VisitDrawn">🩸 Abgenommen</button>
+            <button class="btn" id="d2VisitLab">🧪 Im Labor</button>
+            <button class="btn" id="d2VisitReady">📈 Bereit</button>
+            <button class="btn danger" id="d2VisitReset">↩ Reset</button>
+          </div>
+        </div>
+
+        <!-- KI Card -->
+        <div class="d2-ai-card">
+          <div class="d2-ai-header">
+            <div>
+              <h3>🤖 KI-Zusammenfassung</h3>
+              <p>Assistenz · ohne Diagnose</p>
+            </div>
+            <span class="badge" id="d2AiBadge">—</span>
+          </div>
+          <div class="d2-ai-body" id="d2AiBody">
+            <div class="mini">Wird geladen…</div>
+          </div>
+        </div>
+
+        <!-- Sparklines / Verlauf -->
+        <div class="d2-trend-card">
+          <h3>📈 Fokuswerte – Verlauf <span class="mini" style="font-weight:400">3 Zeitpunkte</span></h3>
+          <div class="d2-trend-grid" id="d2TrendGrid"></div>
+        </div>
+
+        <!-- Nächste Schritte -->
+        <div class="d2-ai-card">
+          <div class="d2-ai-header">
+            <div>
+              <h3>🧭 Nächste Schritte</h3>
+              <p>Assistenz – keine medizinische Beratung.</p>
+            </div>
+          </div>
+          <div class="d2-ai-body" id="d2NextSteps"></div>
+        </div>
+
+        <!-- Orders -->
+        <div class="d2-orders-card">
+          <h3>📦 Meine Bestellungen</h3>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <input id="d2OrdersEmail" type="email" placeholder="E-Mail eingeben"
+              style="flex:1;min-width:160px;background:rgba(16,31,59,.65);border:1px solid var(--border);
+              color:var(--text);padding:10px;border-radius:12px;outline:none;font-size:12px;" />
+            <button class="btn" id="d2OrdersRefresh">↺ Refresh</button>
+            <span class="mini" id="d2OrdersStatus">—</span>
+          </div>
+          <div id="d2OrdersList">
+            <div class="mini">E-Mail eingeben und Refresh klicken.</div>
+          </div>
+        </div>
+
+      </div><!-- Ende Sidebar -->
+    </div><!-- Ende d2-main -->
+
+  </div><!-- Ende d2-wrap -->
+</div><!-- Ende view-step4 -->
+    
     <div class="toast" id="toast">
   <p class="t" id="toastT">—</p>
   <p class="d" id="toastD">—</p>
